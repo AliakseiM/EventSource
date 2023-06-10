@@ -33,7 +33,7 @@ public protocol EventSourceProtocol {
     /// Method used to connect to server. It can receive an optional lastEventId indicating the Last-Event-ID
     ///
     /// - Parameter lastEventId: optional value that is going to be added on the request header to server.
-    func connect(lastEventId: String?)
+    func connect(lastEventId: String?, httpMethod: String?, httpBody: Data?)
 
     /// Method used to disconnect from server.
     func disconnect()
@@ -106,13 +106,24 @@ open class EventSource: NSObject, EventSourceProtocol, URLSessionDataDelegate {
         super.init()
     }
 
-    public func connect(lastEventId: String? = nil) {
+    public func connect(lastEventId: String? = nil, httpMethod: String? = nil, httpBody: Data? = nil) {
         eventStreamParser = EventStreamParser()
         readyState = .connecting
 
         let configuration = sessionConfiguration(lastEventId: lastEventId)
         urlSession = URLSession(configuration: configuration, delegate: self, delegateQueue: operationQueue)
-        urlSession?.dataTask(with: url).resume()
+        
+        var request = URLRequest(url: url)
+        
+        if let method = httpMethod {
+            request.httpMethod = method
+        }
+        
+        if let body = httpBody {
+            request.httpBody = body
+        }
+        
+        urlSession?.dataTask(with: request).resume()
     }
 
     public func disconnect() {
